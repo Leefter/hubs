@@ -1,0 +1,4 @@
+DB_USER="postgres"
+DB_PASS="123456"
+DB_NAME="retdb"
+DB_HOST="pgbouncer"

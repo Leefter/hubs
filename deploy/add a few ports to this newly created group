@@ -1,0 +1,3 @@
+aws ec2 authorize-security-group-ingress --group-id sg-0b85d720a6c10c739 --protocol tcp --port 4443 --cidr 0.0.0.0/0
+aws ec2 authorize-security-group-ingress --group-id sg-0b85d720a6c10c739 --protocol tcp --port 5349 --cidr 0.0.0.0/0
+aws ec2 authorize-security-group-ingress --group-id sg-0b85d720a6c10c739 --protocol udp --port 35000-60000 --cidr 0.0.0.0/0v
