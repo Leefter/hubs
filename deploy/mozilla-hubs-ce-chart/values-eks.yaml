@@ -1,0 +1,154 @@
+# Default values for hubs-ce.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+global:
+  domain: &HUBS_DOMAIN "leefter.space"
+  adminEmail: &ADMINEMAIL "thomas@leefter.com"
+  gcp:
+    persistent:
+      enabled: false
+      storage: 50Gi
+      volumeHandle: "modeInstance/FILESTORE_INSTANCE_LOCATION/FILESTORE_INSTANCE_NAME/FILESTORE_SHARE_NAME"
+      volumeAttributes:
+        ip: FILESTORE_INSTANCE_IP
+        volumeName: FILESTORE_SHARE_NAME
+  aws:
+    efs:
+      enabled: true
+      isDynamicProvisioning: false
+      fileSystemId: fs-08330444e21664605
+
+replicaCount: 1
+# namespace: hcce
+
+image:
+  repository: mozillareality/hubs
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: "stable-latest"
+
+annotations:
+  cluster-autoscaler.kubernetes.io/safe-to-evict: "true"
+
+strategy:
+  type: RollingUpdate
+  rollingUpdate:
+    maxUnavailable: 0
+    maxSurge: 1
+
+certs:
+  enabled: true
+
+env:
+  - name: turkeyCfg_thumbnail_server
+    value: nearspark.reticulum.io
+  - name: turkeyCfg_tier
+    value: p1
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+serviceAccount:
+  # Specifies whether a service account should be created
+  create: true
+  # Annotations to add to the service account
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+  name: ""
+
+podAnnotations: {}
+
+podSecurityContext:
+  {}
+  # fsGroup: 2000
+
+securityContext:
+  {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: true
+  annotations:
+    kubernetes.io/ingress.class: haproxy
+    # kubernetes.io/ingress.class: nginx
+    # kubernetes.io/tls-acme: "true"
+
+resources:
+  {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+ns:
+  enabled: false
+  name: hcce
+
+configs:
+  enabled: true
+  # The name of the configmap to use
+  name: configs
+  # The key of the configmap to use
+  data:
+    HUB_DOMAIN: *HUBS_DOMAIN
+    ADM_EMAIL: *ADMINEMAIL
+    # Get the following from render_helm.sh
+    DB_USER: "postgres"
+    DB_PASS: "Leefter123!"
+    DB_NAME: "retdb"
+    DB_HOST: "pgbouncer"
+    DB_HOST_T: "pgbouncer-t"
+    EXT_DB_HOST: "hubs-ce-demo-database-1.cluster-c7c2wmuaglw2.us-east-1.rds.amazonaws.com"
+    PGRST_DB_URI: "postgres://postgres:Leefter123!@pgbouncer/retdb"
+    PSQL: "postgres://postgres:Leefter123!@pgbouncer/retdb"
+    SMTP_SERVER: "email-smtp.us-east-1.amazonaws.com"
+    SMTP_PORT: "587"
+    SMTP_USER: "AKIA2UC27G4ROLQL4LPN"
+    SMTP_PASS: "BPdHu9S0ZnNAbdXj72GT+YyIU3+BbupXJqNJogXnh93o"
+    NODE_COOKIE: "node-Leefter123!"
+    GUARDIAN_KEY: "Leefter123!"
+    PHX_KEY: "Leefter123!"
+    SKETCHFAB_API_KEY: "?"
+    TENOR_API_KEY: "?"
+    PGRST_JWT_SECRET: '{"kty":"RSA","n":"xlVNGAoQLZ_bG6hHJKN4Jb_iSnoKvj_zoAOf8MvWrLZLEYfszg8H0ECLKOnhi8xjOJcGlv-OgUROir31ymLzE8WwBDlkrXahkM3oUgzAvK0Mz-WUXb6irQ4fllH8DdPGiWhqE-IS6ogE4tPog6R9u5wMV2jkJvT8z3ItWb033gPcBlr8zYoMar-dETYsoR4d5eKSuFwhzTkIua5UkU3-wRK70BFNeg6E5kixmW8JYUHv5W-lxjqHHOAmEWfiIQUSmGD6za1_r893XWJ1lw-RFkbaGn1OBmD0Xe4ZtxyiXWzBvEKfcrp90Mm9dwMAN9AUR7gRQQXbapjMrwneX9bnQw","e":"AQAB"}'
+    PERMS_KEY: '-----BEGIN PRIVATE KEY-----\\nMIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQDGVU0YChAtn9sb\\nqEcko3glv+JKegq+P/OgA5/wy9astksRh+zODwfQQIso6eGLzGM4lwaW/46BRE6K\\nvfXKYvMTxbAEOWStdqGQzehSDMC8rQzP5ZRdvqKtDh+WUfwN08aJaGoT4hLqiATi\\n0+iDpH27nAxXaOQm9PzPci1ZvTfeA9wGWvzNigxqv50RNiyhHh3l4pK4XCHNOQi5\\nrlSRTf7BErvQEU16DoTmSLGZbwlhQe/lb6XGOocc4CYRZ+IhBRKYYPrNrX+vz3dd\\nYnWXD5EWRtoafU4GYPRd7hm3HKJdbMG8Qp9yun3Qyb13AwA30BRHuBFBBdtqmMyv\\nCd5f1udDAgMBAAECggEAGHEVtaMz2DONkIx96/17Roetrwj4Pvbpoqwfr1CnjZRP\\njwMFw2UlzNvPaoTcJ1rSVXyDMuOen76XwVBktILaOvMPXI3oItpuUcaWXVo1/GqF\\nHC/KR31BVftaGC/VVKznGDL2c6nWM/H8TCnaSzLfzdmOyczi5QwnBben8Bm6A1GV\\n2YzHvUXgaK5brLX8CHCBcgvPBuaGOrkaWgP84XJOltmQDyy/WV7Oq0KyyryWj9Mz\\nCOY+X10Z5HoczArtQ0Vo9ctAat7lTha2As+W5jj5NzsClhscTH7wnjEX1H0LEJ/Z\\n8O+dvWrYD603GRwhZSc7ZfoHwQye/tBByLGYA5gWTQKBgQDrmtBAI2mnTF3BGeB3\\n5De/wFsUMyZmyJ3RoE3Ctj4pgufctIXps6ug8nXxMmKVEd8eesVSWcHUj4kEYEtF\\nhm5nOM+jRRJ91xPQWdytxLSKhPWV01rLy0lrUtEze/vz1ni5SNK4jQ60WZgDI6Xn\\n3bqKkQIg9R50L73Xcqhuur8qhwKBgQDXgIVrJ3/8sQDvSIFohm1ynwPzJHgls7B/\\nURbw7sFp6YQd9Hvz3YUjP73Ud/6T1d4fmAvlao39WrRT4QO4UQfJz8y8NwYKxRCI\\nlYPrbFvmNukl8LT7rJM6luO3qmdVGtqH4RMqxmY+oe3Cz2LpTgDq37qPIIvoonLY\\nrbNt7WPgZQKBgQDqEOr13Xi4mZjHIAMueQ+ds+eIYOy0znhj60N1vwJw0TmyvbIQ\\npMxM4LSlxG3GNXQZ3tSsZLm5iEQSkewWDWEfsYQva47ccFGh+7TO+g53U3J8v/aD\\nYtn1AtkNsg50iE11nlCiwpiqOhxYehD4EwOhaEDaJ0tzGH8dTS7imysSfwKBgQCE\\nvJ3xTYgw7hmkSWWkK0DY3AdDyU/T8SUilqDp0DYD9ZiyFrgOkoCCIK3dY/fDuXSy\\nwyV4rrQ8vJTcIXn4GrkQXlU+DSpEkfNIHcf+x2SnnWToQKZJapfY+73RkD1Ll1nJ\\nXiI/M6sgov7fAnxrNeesxBeWNzbWGNFik0M0z4a4XQKBgE0hItE4x+hiFpaeJOV2\\nbw2NabvuOvBnrgsEo5fuVSxqXrrXDnMQEZor4tr2qWNRLzDHmQm5yTLhT/gSWBSu\\nls5Q8OS8hKq77KFm3o4pQG0kEm+CPhipdwh/8dKbcHTcREbNNIJyVKc1FCXWcVxC\\n5L/oW3G6qOs5QB8cQZPicZ6e\\n-----END PRIVATE KEY-----\\n'
+
+defaultCert:
+  enabled: true
+  name: cert-hcce
+  data:
+    tls.crt: "LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSURFekNDQWZ1Z0F3SUJBZ0lVQXRpN2FYelNnMDhzRHdETklKRk9GcVd3ODZ3d0RRWUpLb1pJaHZjTkFRRUwKQlFBd0dERVdNQlFHQTFVRUF3d05iR1ZsWm5SbGNpNXpjR0ZqWlRBZ0Z3MHlOREF4TWpZeU1EQTROVE5hR0E4eQpNVEkwTURFd01qSXdNRGcxTTFvd0dERVdNQlFHQTFVRUF3d05iR1ZsWm5SbGNpNXpjR0ZqWlRDQ0FTSXdEUVlKCktvWklodmNOQVFFQkJRQURnZ0VQQURDQ0FRb0NnZ0VCQUxJQlo2QXd5eG0xZU55MTg5U3JSaWhpYktLQ21tOWgKeE05MnpuZ1VrdnNkQnRaZjZwVmVsaU81MjU5dy9Hb21Ic1VwYlVnWFU0SmRrL2ZQc3hkR1lneTVRaHJuOUxyZQp0ODVVdXFhSmxIbC9xaWt1bWFQcWVCN0VqcDU1cXVYVlZVVmlqVGlod0pMSThGZnhuSmQvNW5hOG51cVFYSTlqCmNGYTc2SE02cHB0MU13dGRUVXZuemtKYXVwRnFuQVo1YUVWR1UveHJKcE9OdS82NzlKMHAzbGlpYWNCTUkyQ2QKL2hPdnpEOGpxU1JyTndMZExTV0hHN2h0VnNPZzQrOVIrNEE0aXp0RnFWMml0SEZhd1R2U0pzNkI4bzhPdkxyRwo3OURPRUpRZHhlaWRjMjBhS1VEMnhWZVI4cGhkSFB1ZUJXZi80Tm5mUDVXZFpHK3g1T2RHMTdFQ0F3RUFBYU5UCk1GRXdIUVlEVlIwT0JCWUVGSHRWcnNOMkxPMVoyWnVidFNFZXJXYTFUU3hHTUI4R0ExVWRJd1FZTUJhQUZIdFYKcnNOMkxPMVoyWnVidFNFZXJXYTFUU3hHTUE4R0ExVWRFd0VCL3dRRk1BTUJBZjh3RFFZSktvWklodmNOQVFFTApCUUFEZ2dFQkFHeXlZait2SFBRYkVCeDJRT21HSEhsK0FGa0M2UGNxYTg0Y1paZ2x1clplZU1WM2kzNDhEaFE0CjkrNTZXYnNYTnR2cEJ3NVMrdnBPQk85Ky92K3VMempTVkFETmZLVFlhbFN1UTVITWpTRlN2dzJUWnIvajA4cDAKNFR0cVQ4a1crOGdROG9XQjRmbEVDSGxoa05yTEVvUTFmUVdudzgzN0FaSVB0dnUweGRITitPN3lHby9wNHNSSAo4NlJOWjRodHlFQUNZeHdzUTRIcXpNRXZFV2xwYmRsb0I0VXJ4NmFOZysxbWhmcGRzdjhXUjQ5MWFlQmdaRFR2CktmNWkzVXA0b0VXOFVkMkNmbFViMFlOb0ZNekNldHhTYm81c2JaV2kwWDY2Q1BGelB1RE9sbEdHeWZ2L3g4WkoKSmtHV0wwMU9jYmN4TVhPRXZDM3lqc3JsbVY4aTEyRT0KLS0tLS1FTkQgQ0VSVElGSUNBVEUtLS0tLQo="
+    tls.key: "LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2Z0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktnd2dnU2tBZ0VBQW9JQkFRQ3lBV2VnTU1zWnRYamMKdGZQVXEwWW9ZbXlpZ3BwdlljVFBkczU0RkpMN0hRYldYK3FWWHBZanVkdWZjUHhxSmg3RktXMUlGMU9DWFpQMwp6N01YUm1JTXVVSWE1L1M2M3JmT1ZMcW1pWlI1ZjZvcExwbWo2bmdleEk2ZWVhcmwxVlZGWW8wNG9jQ1N5UEJYCjhaeVhmK1oydko3cWtGeVBZM0JXdStoek9xYWJkVE1MWFUxTDU4NUNXcnFSYXB3R2VXaEZSbFA4YXlhVGpidisKdS9TZEtkNVlvbW5BVENOZ25mNFRyOHcvSTZra2F6Y0MzUzBsaHh1NGJWYkRvT1B2VWZ1QU9JczdSYWxkb3JSeApXc0U3MGliT2dmS1BEcnk2eHUvUXpoQ1VIY1hvblhOdEdpbEE5c1ZYa2ZLWVhSejduZ1ZuLytEWjN6K1ZuV1J2CnNlVG5SdGV4QWdNQkFBRUNnZ0VBQ1JlWVJ1N25HTitUbGxaMjUyaCtNMmJmbktkbUl3VlA2N2JxVWVqZkh4TjYKKzIwM3lyeGpsOXlROHNKdktpN2JTSC9XdEtWNFh3TFBvWXRLM3dmNXp5T1JWRlYvd3lISUtySmFQRkp2c29zSwpVb011VnRpTm5TaTJEak14dnY2WUZleTBRTzNHSzlrMnFZOU9TOUM5SVZoK0Y0WWJMRG5NamFtWWRIWk05MGk5CnZJS0pGTFNocWtoeGNkOTdiUGo5bkNGa3NrVnVuMzFBTnZZMkpHdk9Cd1NuczdMcUQ1MEFaQ3FKelEvd1liaWUKOFluZURGQ1UyYURYUG9LWk1jWTc5Mm9oS2lhK0dMc203dmFPbzhPdkh0UlF1UHhhNjA3allCcSsxQnF0bUl5dwpYTGE2NTMyL2xlS3MyeVpJc1QxRVdVRm9jdWluaCtwVFp1NXppaHEveVFLQmdRRHpyampUdnNVeFJ1STlWV0hqCndGaDlEZERUZzE3ZDVCQW9xOHVzQzZEZlN1TlQ0WFU2R2NCbGVFSXUxOHdRRFJqbVNVYkppaHplNUtwWXh6UlIKU0Y2M3hFSmRUZGJsdFRNcllOc2c2MzU4c0NmTmhwYXBraE05ODd2a29DeFhBaWlmd0I1NTFXMXhib0VETWQrUgo5L21RRHlBL2laUm5UaDlUSkxibVdwbGdIUUtCZ1FDN0FUTGlKcERtWjZMZ2pTUXdrcEpjOXNMTEJmdEd2YzBPClBjSzhFdVdJODUzRGhLRGNuanZHVTR3TjdjNFpxK21JTWdNRDRuMFRlZmNvWng1bVdEbUcxR05YWk1kckJvVGwKeUJQVHJpelM5SVoxTzNqUEFkNE1RZTZuZUxRQ0xIS0tFM1BiVEw1YmVLREVJUUNPaDhHTTVsVW9FNW9BUlRXTApoTHJ5NGdCcHBRS0JnUUM0Ymtwd2FOalN2UFdLdWs3R2s5UGxna2xsYk82bVBuREVkNUpGZXQrZFlRN0JjOGpICjJxbTFvdGxrbnN2QjhrZkFOQUd4bENqWnduUHprWUhWYTFMVS8yUERQcURCWnUxOWpXY01lWEJZYXZNVktTSnEKNFRaVEUyQklYN3B2ZUNETEdCdDQxc0pvc2R4UFVMWUh3b2xPTVVTVkVrb1NEaHpEVHV4bldIYnhPUUtCZ0VtTgplaWNMUmpqcGtGM0VCZlQ0NFlxaElCTGNvbTI3bjVpM1lBMjdYUDdWMnpxWXd2Q2phQjFrcFJTaGNVd1Ztd0FQCnM3SG1kbzJmamtBYzl3OElLbkJHdjJBVGFvQkZDeWFaNEhxRTZtcDY5UnZOTFlJMldORDNhZGdER01JMkcwTUYKemE3MjYzUnM2TWJidUMxWFppQjJSQTVFVDNGRngzNjkwUTVSS0JwbEFvR0JBTTIwRk1mKzYxZ2ViendRWkRMYgo2NDkxTG50a01DOFlVb2JPeW5XZm5FaGg1dlNlSjh1bDduTTdGNFJ6ckREVXpIYW1CRnl3ZGtlTTd6dzllS3NXCjNzKzRFODBZNXN0TzNzY3J2N3BWb3VyK1JzMnlXcHJXdDJlQ0VzTWRCV0FJeGExSHVCY2hsZnNIdDlCQXdvWWwKME9tMXVLVjJaVGRrdXZkVHY2Nm5TYUE2Ci0tLS0tRU5EIFBSSVZBVEUgS0VZLS0tLS0K"
+pgsql:
+  enabled: false

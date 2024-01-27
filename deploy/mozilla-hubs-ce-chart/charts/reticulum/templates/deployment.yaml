@@ -1,0 +1,217 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "reticulum.fullname" . }}
+  labels:
+    {{- include "reticulum.labels" . | nindent 4 }}
+  {{- with .Values.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  minReadySeconds: 15
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      {{- include "reticulum.selectorLabels" . | nindent 6 }}
+  revisionHistoryLimit: {{ .Values.revisionHistoryLimit }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "reticulum.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "reticulum.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      volumes:
+        - name: storage
+          {{- if .Values.global.aws.efs.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "reticulum.fullname" . }}-efs-claim
+          {{- else }}
+          hostPath:
+            path: /tmp/ret_storage_data
+            type: DirectoryOrCreate
+          {{- end }}
+        - name: config
+          configMap:
+            name: ret-config
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+          - containerPort: 9100
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 4001
+              scheme: HTTP
+            initialDelaySeconds: 30
+            timeoutSeconds: 3
+            periodSeconds: 30
+          readinessProbe:
+            initialDelaySeconds: 20
+            httpGet:
+              path: /?skipadmin
+              port: 4001
+              scheme: HTTP
+            timeoutSeconds: 5
+            periodSeconds: 5
+            successThreshold: 5
+            failureThreshold: 100
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts: 
+            {{- toYaml .Values.volumeMounts | nindent 12 }}
+          env: 
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+            - name: POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: turkeyCfg_POD_NS
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: turkeyCfg_NODE_COOKIE
+              valueFrom:
+                secretKeyRef:
+                  name: configs
+                  key: NODE_COOKIE
+            - name: turkeyCfg_HUB_DOMAIN
+              valueFrom:
+                secretKeyRef:
+                  name: configs
+                  key: HUB_DOMAIN
+            - name: turkeyCfg_DOMAIN
+              valueFrom:
+                secretKeyRef:
+                  name: configs
+                  key: HUB_DOMAIN
+            - name: turkeyCfg_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: configs
+                  key: DB_USER
+            - name: turkeyCfg_DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: configs
+                  key: DB_PASS
+            - name: turkeyCfg_DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: configs
+                  key: DB_NAME
+            - name: turkeyCfg_DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: configs
+                  key: DB_HOST
+            - name: turkeyCfg_DB_HOST_T
+              valueFrom:
+                secretKeyRef:
+                  name: configs
+                  key: DB_HOST_T
+            - name: turkeyCfg_GUARDIAN_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: configs
+                  key: GUARDIAN_KEY
+            - name: turkeyCfg_PERMS_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: configs
+                  key: PERMS_KEY
+            - name: turkeyCfg_PHX_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: configs
+                  key: PHX_KEY
+            - name: turkeyCfg_SMTP_SERVER
+              valueFrom:
+                secretKeyRef:
+                  name: configs
+                  key: SMTP_SERVER
+            - name: turkeyCfg_SMTP_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: configs
+                  key: SMTP_PORT
+            - name: turkeyCfg_SMTP_USER
+              valueFrom:
+                secretKeyRef:
+                  name: configs
+                  key: SMTP_USER
+            - name: turkeyCfg_SMTP_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: configs
+                  key: SMTP_PASS
+            - name: turkeyCfg_ADM_EMAIL
+              valueFrom:
+                secretKeyRef:
+                  name: configs
+                  key: ADM_EMAIL
+            - name: turkeyCfg_SKETCHFAB_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: configs
+                  key: SKETCHFAB_API_KEY
+            - name: turkeyCfg_IMG_PROXY
+              value: nearspark.{{ .Release.Namespace }}.
+            - name: turkeyCfg_TENOR_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: configs
+                  key: TENOR_API_KEY
+            - name: turkeyCfg_YTDL_HOST
+              value: "https://hubs-ytdl-fsu7tyt32a-uc.a.run.app"
+            - name: turkeyCfg_PHOTOMNEMONIC
+              value: "https://photomnemonic-fsu7tyt32a-uc.a.run.app"
+            - name: turkeyCfg_SPEELYCAPTOR
+              value: "http://speelycaptor:5000"
+            - name: turkeyCfg_STORAGE_QUOTA_GB
+              value: "1000"
+        {{- if .Values.sidecar.enabled }}
+        - name: {{ .Values.sidecar.name }}
+          image: {{ .Values.sidecar.image }}
+          ports:
+            {{ toYaml .Values.sidecar.ports | nindent 12 }}
+          env: 
+            {{ toYaml .Values.sidecar.env | nindent 12 }}
+        {{- end }}
+
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

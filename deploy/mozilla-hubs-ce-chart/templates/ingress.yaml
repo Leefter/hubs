@@ -1,0 +1,47 @@
+{{- if .Values.ingress.enabled -}}
+{{- $fullName := include "hubs-ce.fullname" . -}}
+{{- $svcPort := .Values.service.port -}}
+{{- if semverCompare ">=1.14-0" .Capabilities.KubeVersion.GitVersion -}}
+apiVersion: networking.k8s.io/v1
+{{- else -}}
+apiVersion: extensions/v1beta1
+{{- end }}
+kind: Ingress
+metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "hubs-ce.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  tls:
+    - hosts:
+        - assets.{{ .Values.global.domain }}
+      secretName: cert-assets.{{ .Values.global.domain }}
+    - hosts:
+        - cors.{{ .Values.global.domain }}
+      secretName: cert-cors.{{ .Values.global.domain }}
+  rules:
+    - host: assets.{{ .Values.global.domain }}
+      http:
+        paths:
+        - path: /hubs
+          pathType: Prefix
+          backend:
+            service:
+              name: hubs
+              port: 
+                number: 8080
+    - host: cors.{{ .Values.global.domain }}
+      http:
+        paths:                 
+        - path: /hubs
+          pathType: Prefix
+          backend:
+            service:
+              name: hubs
+              port: 
+                number: 8080
+  {{- end }}

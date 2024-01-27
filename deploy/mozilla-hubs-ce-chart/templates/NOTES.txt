@@ -1,0 +1,17 @@
+DNS: Replace the values of all four records with your instance's external IP address. These should be:
+ <HUB_DOMAIN>
+ assets.<HUB_DOMAIN>
+ stream.<HUB_DOMAIN>
+ cors.<HUB_DOMAIN>
+
+Ports: 
+    Ensure these ports are open to the worker nodes:
+    * TCP: 80, 443, 4443, 5349
+    * UDP: 35000 -> 60000
+
+Get the application URL by running these commands:
+    You can watch the status of by running "kubectl get --namespace {{ .Release.Namespace }} svc -w haproxy-lb"
+
+     NOTE: It may take a few minutes for the LoadBalancer IP to be available. Once dns is setup the hub ce stack should come online at your <HUB_DOMAIN>
+           You can get the external-ip by running "kubectl get --namespace {{ .Release.Namespace }} svc -w haproxy-lb --output jsonpath='{.status.loadBalancer.ingress[0].hostname}'"
+           Get all pods "kubectl get pods --namespace {{ .Release.Namespace }}'"
